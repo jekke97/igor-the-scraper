@@ -28,6 +28,7 @@ def main() -> None:
     igor.run(
         events, "lab111", win_start, win_end,
         message=lambda a, r: f"*Lab111* — {a} added, {r} removed. What hump?\n— Eye-gor",
+        min_events=10,
     )
 
 

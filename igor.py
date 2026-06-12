@@ -29,17 +29,20 @@ def run(
     window_end: datetime,
     message: str | Callable[[int, int], str] | None = None,
     notify: bool = True,
+    min_events: int = 0,
 ) -> tuple[int, int]:
     """
     Sync events to Google Calendar, then optionally send a Telegram notification.
 
-    message: plain string, a callable (added, removed) -> str, or None for a default summary.
-    notify:  set to False to skip Telegram entirely.
+    message:    plain string, a callable (added, removed) -> str, or None for a default summary.
+    notify:     set to False to skip Telegram entirely.
+    min_events: abort (and raise) if fewer than this many events were scraped.
 
     Returns (added, removed).
     """
     service = get_service()
-    added, removed = sync(events, calendar_name, service, window_start, window_end)
+    added, removed = sync(events, calendar_name, service, window_start, window_end,
+                          min_events=min_events)
 
     if notify:
         token   = os.environ.get("TELEGRAM_TOKEN", "")

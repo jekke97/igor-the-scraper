@@ -68,11 +68,16 @@ def sync(
     service,
     window_start: datetime,
     window_end: datetime,
+    min_events: int = 0,
 ) -> tuple[int, int]:
     """
     Sync events to Google Calendar within [window_start, window_end].
     Adds new events, removes events no longer in the scraped list.
     Returns (added, removed).
+
+    min_events: if the scraped list is smaller than this, abort rather than
+    delete existing events (guards against a silent scraper failure wiping
+    the calendar clean).
     """
     cal_id = _get_or_create_calendar(service, calendar_name)
 
@@ -94,6 +99,13 @@ def sync(
             break
 
     print(f"Found {len(existing)} existing events in '{calendar_name}' calendar.")
+
+    if min_events and len(events) < min_events:
+        raise RuntimeError(
+            f"Scraped only {len(events)} events for '{calendar_name}' "
+            f"(minimum {min_events}); aborting to protect existing calendar."
+        )
+
     scraped_uids = {ev.uid for ev in events}
 
     removed = 0
