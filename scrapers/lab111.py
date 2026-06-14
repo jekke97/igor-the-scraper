@@ -38,9 +38,16 @@ def _fetch_duration(session: requests.Session, movie_url: str) -> timedelta:
     return _DEFAULT_DUR
 
 
-def scrape(forecast_days: int = 14) -> list[CalendarEvent]:
+def _make_session(use_cloudscraper: bool) -> requests.Session:
+    if use_cloudscraper:
+        import cloudscraper
+        return cloudscraper.create_scraper()
+    return requests.Session()
+
+
+def scrape(forecast_days: int = 14, use_cloudscraper: bool = False) -> list[CalendarEvent]:
     today   = datetime.now()
-    session = requests.Session()
+    session = _make_session(use_cloudscraper)
     soup    = BeautifulSoup(
         session.get(_URL, timeout=15, headers=_HEADERS).content, "lxml"
     )
