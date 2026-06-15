@@ -182,7 +182,7 @@ def scrape(days: int = 14, tz: str = "Europe/Rome") -> list[CalendarEvent]:
                 ts -= 1800
             elif part == "plus":
                 ts += 1800
-            elif "Pauper" in part:
+            elif "Pauper" in part and "Prelim" not in part:
                 dt  = datetime.fromtimestamp(ts, tz=local_tz)
                 key = (round(ts), part)
                 if week_start <= dt < week_end and key not in seen:
