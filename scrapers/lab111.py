@@ -45,15 +45,22 @@ def _make_session(use_cloudscraper: bool) -> requests.Session:
     return requests.Session()
 
 
-def scrape(forecast_days: int = 14, use_cloudscraper: bool = False) -> list[CalendarEvent]:
-    today    = datetime.now()
-    session  = _make_session(use_cloudscraper)
-    resp     = session.get(_URL, timeout=15, headers=_HEADERS)
-    has_rows = bool(resp.text) and "day0" in resp.text
-    if not has_rows:
-        print(f"  [debug] GET {_URL} -> status={resp.status_code} len={len(resp.text)}")
+def _fetch_programme(use_cloudscraper: bool, attempts: int = 3) -> tuple[requests.Session, "BeautifulSoup"]:
+    """Fetch the programme page, retrying with a fresh session if Cloudflare blocks it."""
+    for attempt in range(attempts):
+        session = _make_session(use_cloudscraper)
+        resp    = session.get(_URL, timeout=15, headers=_HEADERS)
+        if "day0" in resp.text:
+            return session, BeautifulSoup(resp.content, "lxml")
+        print(f"  [debug] attempt {attempt + 1}/{attempts}: GET {_URL} -> "
+              f"status={resp.status_code} len={len(resp.text)}")
         print(f"  [debug] body snippet: {resp.text[:300]!r}")
-    soup    = BeautifulSoup(resp.content, "lxml")
+    return session, BeautifulSoup(resp.content, "lxml")
+
+
+def scrape(forecast_days: int = 14, use_cloudscraper: bool = False) -> list[CalendarEvent]:
+    today           = datetime.now()
+    session, soup   = _fetch_programme(use_cloudscraper)
     events: list[CalendarEvent] = []
     skipped = 0
 

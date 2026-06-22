@@ -34,6 +34,8 @@ _MOVIE_DETAIL_HTML = """
 def _resp(html: str) -> MagicMock:
     r = MagicMock()
     r.content = html.encode()
+    r.text = html
+    r.status_code = 200
     return r
 
 
@@ -109,6 +111,20 @@ def test_row_with_broken_dom_is_skipped():
         events = scrape(forecast_days=1)
 
     assert events == [], "row with broken DOM should be skipped, not raise"
+
+
+def test_blocked_first_attempt_retries_and_recovers():
+    """If the first fetch comes back without day0 rows (e.g. a Cloudflare block),
+    scrape() must retry with a fresh session instead of giving up immediately."""
+    blocked = _resp("<html><body>Just a moment...</body></html>")
+    with patch("scrapers.lab111.requests.Session",
+               side_effect=[
+                   _mock_session(blocked),
+                   _mock_session(_resp(_PROGRAMME_HTML), _resp(_MOVIE_DETAIL_HTML)),
+               ]):
+        events = scrape(forecast_days=1)
+
+    assert len(events) == 1, "should recover once a retry returns real content"
 
 
 def test_movie_page_fetch_failure_uses_default_duration():
