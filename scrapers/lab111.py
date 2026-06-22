@@ -46,11 +46,14 @@ def _make_session(use_cloudscraper: bool) -> requests.Session:
 
 
 def scrape(forecast_days: int = 14, use_cloudscraper: bool = False) -> list[CalendarEvent]:
-    today   = datetime.now()
-    session = _make_session(use_cloudscraper)
-    soup    = BeautifulSoup(
-        session.get(_URL, timeout=15, headers=_HEADERS).content, "lxml"
-    )
+    today    = datetime.now()
+    session  = _make_session(use_cloudscraper)
+    resp     = session.get(_URL, timeout=15, headers=_HEADERS)
+    has_rows = bool(resp.text) and "day0" in resp.text
+    if not has_rows:
+        print(f"  [debug] GET {_URL} -> status={resp.status_code} len={len(resp.text)}")
+        print(f"  [debug] body snippet: {resp.text[:300]!r}")
+    soup    = BeautifulSoup(resp.content, "lxml")
     events: list[CalendarEvent] = []
     skipped = 0
 
